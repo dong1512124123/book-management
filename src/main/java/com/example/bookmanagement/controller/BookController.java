@@ -60,8 +60,13 @@ public class BookController {
                          @RequestParam(value = "coverFile", required = false) MultipartFile coverFile,
                          RedirectAttributes redirectAttributes) throws IOException {
         if (coverFile != null && !coverFile.isEmpty()) {
-            String fileName = bookService.saveCoverImage(coverFile);
-            book.setCoverImage(fileName);
+            try {
+                String fileName = bookService.saveCoverImage(coverFile);
+                book.setCoverImage(fileName);
+            } catch (IllegalArgumentException e) {
+                redirectAttributes.addFlashAttribute("error", e.getMessage());
+                return "redirect:/books/new";
+            }
         }
         bookService.save(book);
         redirectAttributes.addFlashAttribute("message", "도서가 등록되었습니다.");
@@ -120,12 +125,17 @@ public class BookController {
             bookService.deleteCoverImage(existing.getCoverImage());
             book.setCoverImage(null);
         } else if (coverFile != null && !coverFile.isEmpty()) {
-            // 기존 이미지 삭제 후 새 이미지 저장
-            if (existing.getCoverImage() != null) {
-                bookService.deleteCoverImage(existing.getCoverImage());
+            try {
+                // 기존 이미지 삭제 후 새 이미지 저장
+                if (existing.getCoverImage() != null) {
+                    bookService.deleteCoverImage(existing.getCoverImage());
+                }
+                String fileName = bookService.saveCoverImage(coverFile);
+                book.setCoverImage(fileName);
+            } catch (IllegalArgumentException e) {
+                redirectAttributes.addFlashAttribute("error", e.getMessage());
+                return "redirect:/books/" + id + "/edit";
             }
-            String fileName = bookService.saveCoverImage(coverFile);
-            book.setCoverImage(fileName);
         } else {
             // 이미지 변경 없음 → 기존 유지
             book.setCoverImage(existing.getCoverImage());

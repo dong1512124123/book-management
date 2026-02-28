@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 // 도서 관련 비즈니스 로직 담당
@@ -35,17 +36,32 @@ public class BookService {
         }
     }
 
-    // 표지 이미지 저장
+    // 허용된 이미지 확장자 목록
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp");
+
+    // 표지 이미지 저장 (MIME 타입 + 확장자 검증 포함)
     public String saveCoverImage(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             return null;
         }
+
+        // MIME 타입 검증: image/* 만 허용
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("이미지 파일만 업로드할 수 있습니다.");
+        }
+
+        // 확장자 검증: 허용된 확장자만 통과
         String originalName = file.getOriginalFilename();
         String ext = "";
         if (originalName != null && originalName.contains(".")) {
-            ext = originalName.substring(originalName.lastIndexOf("."));
+            ext = originalName.substring(originalName.lastIndexOf(".") + 1).toLowerCase();
         }
-        String fileName = UUID.randomUUID().toString() + ext;
+        if (ext.isEmpty() || !ALLOWED_EXTENSIONS.contains(ext)) {
+            throw new IllegalArgumentException("허용되지 않는 파일 형식입니다. (허용: jpg, jpeg, png, gif, webp)");
+        }
+
+        String fileName = UUID.randomUUID().toString() + "." + ext;
         Files.copy(file.getInputStream(), uploadDir.resolve(fileName));
         return fileName;
     }

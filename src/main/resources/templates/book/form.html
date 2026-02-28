@@ -21,6 +21,12 @@
             <h2 th:text="${book.id != null} ? '도서 수정' : '도서 등록'">도서 등록</h2>
         </div>
 
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
         <div class="card">
             <div class="card-body">
                 <form th:action="${book.id != null} ? @{/books/{id}/edit(id=${book.id})} : @{/books}"
