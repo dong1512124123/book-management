@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ko">
+<head th:replace="~{fragments/header :: styles}">
+    <title>대출/반납 목록</title>
+</head>
+<body>
+    <nav th:replace="~{fragments/header :: navbar}"></nav>
+    <div th:replace="~{fragments/header :: sidebar}"></div>
+
+    <div class="main-content">
+    <div class="container-fluid">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/dashboard">홈</a></li>
+                        <li class="breadcrumb-item active">대출/반납 목록</li>
+                    </ol>
+                </nav>
+                <h2>대출/반납 목록</h2>
+            </div>
+            <a href="/loans/new" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> 대출 처리
+            </a>
+        </div>
+
+        <!-- 성공/오류 메시지 -->
+        <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>
+            <span th:text="${message}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- 상태별 필터 탭 -->
+        <ul class="nav nav-tabs mb-3" id="statusTab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" href="/loans">
+                    <i class="bi bi-list-ul me-1"></i>전체
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:classappend="${currentStatus == 'REQUESTED'} ? 'active' : ''"
+                   href="/loans?status=REQUESTED">
+                    <i class="bi bi-clock me-1"></i>승인 대기
+                    <span class="badge bg-warning text-dark ms-1"
+                          th:if="${pendingCount != null && pendingCount > 0}"
+                          th:text="${pendingCount}"></span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:classappend="${currentStatus == 'APPROVED'} ? 'active' : ''"
+                   href="/loans?status=APPROVED">
+                    <i class="bi bi-book me-1"></i>대출 중
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:classappend="${currentStatus == 'RETURN_REQUESTED'} ? 'active' : ''"
+                   href="/loans?status=RETURN_REQUESTED">
+                    <i class="bi bi-arrow-return-left me-1"></i>반납 대기
+                    <span class="badge bg-danger ms-1"
+                          th:if="${returnRequestCount != null && returnRequestCount > 0}"
+                          th:text="${returnRequestCount}"></span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:classappend="${currentStatus == 'RETURNED'} ? 'active' : ''"
+                   href="/loans?status=RETURNED">
+                    <i class="bi bi-check-circle me-1"></i>반납 완료
+                </a>
+            </li>
+        </ul>
+
+        <!-- 대출 기록 테이블 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-arrow-left-right me-2"></i>대출 기록
+                    <span class="badge bg-secondary" th:text="${#lists.size(loans)} + '건'"></span>
+                </h5>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-1"></i>대출 기록 다운로드
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a id="loanPdfBtn" class="dropdown-item" href="/pdf/loans">
+                            <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF
+                        </a></li>
+                        <li><a id="loanExcelBtn" class="dropdown-item" href="/excel/loans">
+                            <i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:60px">번호</th>
+                                <th class="sortable" data-col="1" style="cursor:pointer; user-select:none;">도서명 <span class="sort-icon">▽</span></th>
+                                <th class="sortable" data-col="2" style="width:100px; cursor:pointer; user-select:none;">저자 <span class="sort-icon">▽</span></th>
+                                <th class="sortable" data-col="3" style="width:100px; cursor:pointer; user-select:none;">출판사 <span class="sort-icon">▽</span></th>
+                                <th class="sortable" data-col="4" style="width:100px; cursor:pointer; user-select:none;">회원명 <span class="sort-icon">▽</span></th>
+                                <th class="sortable" data-col="5" style="width:120px; cursor:pointer; user-select:none;">대출일 <span class="sort-icon">▽</span></th>
+                                <th class="sortable" data-col="6" style="width:120px; cursor:pointer; user-select:none;">반납기한 <span class="sort-icon">▽</span></th>
+                                <th class="sortable" data-col="7" style="width:120px; cursor:pointer; user-select:none;">반납일 <span class="sort-icon">▽</span></th>
+                                <th class="sortable" data-col="8" style="width:110px; cursor:pointer; user-select:none;">상태 <span class="sort-icon">▽</span></th>
+                                <th style="width:140px">처리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="loan, stat : ${loans}">
+                                <td th:text="${stat.count}"></td>
+                                <td style="max-width:200px;">
+                                    <a th:href="@{/books/{id}(id=${loan.book.id}, from='loans')}"
+                                       class="text-decoration-none fw-bold" th:text="${loan.book.title}"
+                                       style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;"></a>
+                                </td>
+                                <td th:text="${loan.book.author}"></td>
+                                <td th:text="${loan.book.publisher}"></td>
+                                <td th:text="${loan.member.name}"></td>
+                                <td th:text="${loan.borrowDate}"></td>
+                                <td th:text="${loan.returnDueDate}"></td>
+                                <td th:text="${loan.returnedDate != null} ? ${loan.returnedDate} : '-'"></td>
+                                <td>
+                                    <!-- 승인 대기 -->
+                                    <span th:if="${loan.status == 'REQUESTED'}" class="badge badge-requested">
+                                        <i class="bi bi-clock me-1"></i>승인 대기
+                                    </span>
+                                    <!-- 대출 중 (연체) -->
+                                    <span th:if="${loan.status == 'APPROVED' && loan.overdue}" class="badge badge-overdue">
+                                        <i class="bi bi-exclamation-circle me-1"></i>연체
+                                    </span>
+                                    <!-- 대출 중 (정상) -->
+                                    <span th:if="${loan.status == 'APPROVED' && !loan.overdue}" class="badge badge-approved">
+                                        <i class="bi bi-circle-fill me-1" style="font-size:0.5rem"></i>대출 중
+                                    </span>
+                                    <!-- 반납 대기 -->
+                                    <span th:if="${loan.status == 'RETURN_REQUESTED'}" class="badge badge-return-requested">
+                                        <i class="bi bi-arrow-return-left me-1"></i>반납 대기
+                                    </span>
+                                    <!-- 반납 완료 -->
+                                    <span th:if="${loan.status == 'RETURNED'}" class="badge badge-returned">
+                                        <i class="bi bi-check-circle me-1"></i>반납 완료
+                                    </span>
+                                </td>
+                                <td>
+                                    <!-- 승인 대기 → 승인/거절 버튼 -->
+                                    <div th:if="${loan.status == 'REQUESTED'}" class="d-flex gap-1">
+                                        <form th:action="@{/loans/{id}/approve(id=${loan.id})}" method="post">
+                                            <button type="submit" class="btn btn-sm btn-success"
+                                                    onclick="return confirm('대출을 승인하시겠습니까?')">
+                                                <i class="bi bi-check-lg"></i> 승인
+                                            </button>
+                                        </form>
+                                        <form th:action="@{/loans/{id}/reject(id=${loan.id})}" method="post">
+                                            <button type="submit" class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('대출 신청을 거절하시겠습니까?')">
+                                                <i class="bi bi-x-lg"></i> 거절
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <!-- 대출 중 → 직접 반납 처리 -->
+                                    <form th:if="${loan.status == 'APPROVED'}"
+                                          th:action="@{/loans/{id}/return(id=${loan.id})}" method="post" style="display:inline">
+                                        <button type="submit" class="btn btn-sm btn-primary"
+                                                onclick="return confirm('반납 처리하시겠습니까?')">
+                                            <i class="bi bi-arrow-return-left me-1"></i>반납
+                                        </button>
+                                    </form>
+                                    <!-- 반납 대기 → 반납 확인 버튼 -->
+                                    <form th:if="${loan.status == 'RETURN_REQUESTED'}"
+                                          th:action="@{/loans/{id}/confirm-return(id=${loan.id})}" method="post" style="display:inline">
+                                        <button type="submit" class="btn btn-sm btn-info text-white"
+                                                onclick="return confirm('반납을 확인하시겠습니까?')">
+                                            <i class="bi bi-check2-circle me-1"></i>반납 확인
+                                        </button>
+                                    </form>
+                                    <!-- 반납 완료 -->
+                                    <span th:if="${loan.status == 'RETURNED'}" class="text-muted">-</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(loans)}">
+                                <td colspan="10" class="text-center text-muted py-4">대출 기록이 없습니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 테이블 정렬
+        (function() {
+            var currentSort = { col: -1, asc: true };
+            var table = document.querySelector('.table');
+            document.querySelectorAll('.sortable').forEach(function(th) {
+                th.addEventListener('click', function() {
+                    var col = parseInt(th.getAttribute('data-col'));
+                    if (currentSort.col === col) {
+                        currentSort.asc = !currentSort.asc;
+                    } else {
+                        currentSort.col = col;
+                        currentSort.asc = true;
+                    }
+                    document.querySelectorAll('.sort-icon').forEach(function(s) { s.textContent = '▽'; s.style.opacity = '0.4'; });
+                    var icon = th.querySelector('.sort-icon');
+                    icon.textContent = currentSort.asc ? '△' : '▼';
+                    icon.style.opacity = '1';
+                    var tbody = table.querySelector('tbody');
+                    var rows = Array.from(tbody.querySelectorAll('tr')).filter(function(r) { return r.cells.length > 1; });
+                    rows.sort(function(a, b) {
+                        var aText = (a.cells[col].textContent || '').trim().toLowerCase();
+                        var bText = (b.cells[col].textContent || '').trim().toLowerCase();
+                        if (aText < bText) return currentSort.asc ? -1 : 1;
+                        if (aText > bText) return currentSort.asc ? 1 : -1;
+                        return 0;
+                    });
+                    rows.forEach(function(r, i) {
+                        tbody.appendChild(r);
+                        r.cells[0].textContent = i + 1;
+                    });
+                });
+            });
+            document.querySelectorAll('.sort-icon').forEach(function(s) { s.style.opacity = '0.4'; s.style.fontSize = '0.7rem'; });
+        })();
+
+        // 다운로드 링크에 현재 상태 필터 반영
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var status = params.get('status') || '';
+            var query = status ? '?status=' + encodeURIComponent(status) : '';
+            document.getElementById('loanPdfBtn').href = '/pdf/loans' + query;
+            document.getElementById('loanExcelBtn').href = '/excel/loans' + query;
+        })();
+    </script>
+</body>
+</html>

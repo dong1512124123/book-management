@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ko">
+<head th:replace="~{fragments/header :: styles}">
+    <title>로그인 이력</title>
+</head>
+<body>
+    <nav th:replace="~{fragments/header :: navbar}"></nav>
+    <div th:replace="~{fragments/header :: sidebar}"></div>
+
+    <div class="main-content">
+    <div class="container-fluid">
+        <div class="page-header">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="/dashboard">홈</a></li>
+                    <li class="breadcrumb-item active">로그인 이력</li>
+                </ol>
+            </nav>
+            <h2>로그인 이력</h2>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>로그인 기록
+                    <span class="badge bg-secondary" th:text="${#lists.size(histories)} + '건'"></span>
+                </h5>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-1"></i>이력 다운로드
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/pdf/login-history">
+                            <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF
+                        </a></li>
+                        <li><a class="dropdown-item" href="/excel/login-history">
+                            <i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:60px">번호</th>
+                                <th class="sortable" data-col="1" style="width:100px; cursor:pointer; user-select:none;">유형 <span class="sort-icon">▽</span></th>
+                                <th class="sortable" data-col="2" style="cursor:pointer; user-select:none;">아이디 <span class="sort-icon">▽</span></th>
+                                <th class="sortable" data-col="3" style="cursor:pointer; user-select:none;">로그인 시각 <span class="sort-icon">▽</span></th>
+                                <th class="sortable" data-col="4" style="cursor:pointer; user-select:none;">IP 주소 <span class="sort-icon">▽</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="h, stat : ${histories}">
+                                <td th:text="${stat.count}"></td>
+                                <td>
+                                    <span th:if="${h.userType == 'ADMIN'}" class="badge bg-danger">관리자</span>
+                                    <span th:if="${h.userType == 'USER'}" class="badge bg-primary">사용자</span>
+                                </td>
+                                <td th:text="${h.username}"></td>
+                                <td th:text="${#temporals.format(h.loginTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                                <td th:text="${h.ipAddress}"></td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(histories)}">
+                                <td colspan="5" class="text-center text-muted py-4">로그인 이력이 없습니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function() {
+            var currentSort = { col: -1, asc: true };
+            var table = document.querySelector('.table');
+            document.querySelectorAll('.sortable').forEach(function(th) {
+                th.addEventListener('click', function() {
+                    var col = parseInt(th.getAttribute('data-col'));
+                    if (currentSort.col === col) { currentSort.asc = !currentSort.asc; }
+                    else { currentSort.col = col; currentSort.asc = true; }
+                    document.querySelectorAll('.sort-icon').forEach(function(s) { s.textContent = '▽'; s.style.opacity = '0.4'; });
+                    var icon = th.querySelector('.sort-icon');
+                    icon.textContent = currentSort.asc ? '△' : '▼';
+                    icon.style.opacity = '1';
+                    var tbody = table.querySelector('tbody');
+                    var rows = Array.from(tbody.querySelectorAll('tr')).filter(function(r) { return r.cells.length > 1; });
+                    rows.sort(function(a, b) {
+                        var aText = (a.cells[col].textContent || '').trim().toLowerCase();
+                        var bText = (b.cells[col].textContent || '').trim().toLowerCase();
+                        if (aText < bText) return currentSort.asc ? -1 : 1;
+                        if (aText > bText) return currentSort.asc ? 1 : -1;
+                        return 0;
+                    });
+                    rows.forEach(function(r, i) { tbody.appendChild(r); r.cells[0].textContent = i + 1; });
+                });
+            });
+            document.querySelectorAll('.sort-icon').forEach(function(s) { s.style.opacity = '0.4'; s.style.fontSize = '0.7rem'; });
+        })();
+    </script>
+</body>
+</html>

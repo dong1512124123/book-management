@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/header :: styles}">
+    <title>회원 등록</title>
+</head>
+<body>
+    <nav th:replace="~{fragments/header :: navbar}"></nav>
+    <div th:replace="~{fragments/header :: sidebar}"></div>
+
+    <div class="main-content">
+    <div class="container-fluid" style="max-width: 600px;">
+        <div class="page-header">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="/dashboard">홈</a></li>
+                    <li class="breadcrumb-item"><a href="/members">회원 목록</a></li>
+                    <li class="breadcrumb-item active"
+                        th:text="${member.id != null} ? '회원 수정' : '회원 등록'">회원 등록</li>
+                </ol>
+            </nav>
+            <h2 th:text="${member.id != null} ? '회원 수정' : '회원 등록'">회원 등록</h2>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form th:action="${member.id != null} ? @{/members/{id}/edit(id=${member.id})} : @{/members}"
+                      th:object="${member}" method="post">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">이름 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" th:field="*{name}"
+                               placeholder="회원 이름을 입력하세요" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">전화번호 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" th:field="*{phone}"
+                               id="phoneInput" placeholder="010-0000-0000" maxlength="13" required>
+                        <div class="form-text">숫자만 입력하면 자동으로 하이픈(-)이 삽입됩니다.</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>
+                            <span th:text="${member.id != null} ? '수정 완료' : '등록하기'">등록하기</span>
+                        </button>
+                        <a href="/members" class="btn btn-outline-secondary">취소</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 전화번호 자동 하이픈 (010-1234-5678 형식, 3-4-4)
+        document.getElementById('phoneInput').addEventListener('input', function(e) {
+            var val = this.value.replace(/[^0-9]/g, ''); // 숫자만 남기기
+            var result = '';
+            // 3-4-4 패턴으로 하이픈 삽입
+            for (var i = 0; i < val.length && i < 11; i++) {
+                if (i === 3 || i === 7) result += '-';
+                result += val[i];
+            }
+            this.value = result;
+        });
+    </script>
+</body>
+</html>

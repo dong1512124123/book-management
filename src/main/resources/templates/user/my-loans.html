@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/header :: styles}">
+    <title>내 대출 현황</title>
+</head>
+<body>
+    <nav th:replace="~{fragments/header :: navbar}"></nav>
+    <div th:replace="~{fragments/header :: sidebar}"></div>
+
+    <div class="main-content">
+    <div class="container-fluid">
+        <div class="page-header">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="/user/dashboard">홈</a></li>
+                    <li class="breadcrumb-item active">내 대출 현황</li>
+                </ol>
+            </nav>
+            <h2>내 대출 현황</h2>
+        </div>
+
+        <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>
+            <span th:text="${message}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-journal-text me-2"></i>대출 기록
+                    <span class="badge bg-secondary" th:text="${#lists.size(loans)} + '건'"></span>
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:60px">번호</th>
+                                <th>도서명</th>
+                                <th style="width:100px">저자</th>
+                                <th style="width:100px">대출일</th>
+                                <th style="width:100px">반납기한</th>
+                                <th style="width:100px">반납일</th>
+                                <th style="width:110px">상태</th>
+                                <th style="width:100px">처리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="loan, stat : ${loans}">
+                                <td th:text="${stat.count}"></td>
+                                <td>
+                                    <a th:href="@{/user/books/{id}(id=${loan.book.id}, from='my-loans')}"
+                                       class="text-decoration-none fw-bold" th:text="${loan.book.title}"></a>
+                                </td>
+                                <td th:text="${loan.book.author}"></td>
+                                <td th:text="${loan.borrowDate}"></td>
+                                <td th:text="${loan.returnDueDate}"></td>
+                                <td th:text="${loan.returnedDate != null} ? ${loan.returnedDate} : '-'"></td>
+                                <td>
+                                    <span th:if="${loan.status == 'REQUESTED'}" class="badge badge-requested">승인 대기</span>
+                                    <span th:if="${loan.status == 'APPROVED' && loan.overdue}" class="badge badge-overdue">연체</span>
+                                    <span th:if="${loan.status == 'APPROVED' && !loan.overdue}" class="badge badge-approved">대출 중</span>
+                                    <span th:if="${loan.status == 'RETURN_REQUESTED'}" class="badge badge-return-requested">반납 대기</span>
+                                    <span th:if="${loan.status == 'RETURNED'}" class="badge badge-returned">반납 완료</span>
+                                </td>
+                                <td>
+                                    <!-- 승인된 상태에서만 반납 신청 가능 -->
+                                    <form th:if="${loan.status == 'APPROVED'}"
+                                          th:action="@{/user/loans/{id}/return(id=${loan.id})}" method="post"
+                                          onsubmit="return confirm('이 도서를 반납 신청하시겠습니까?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-box-arrow-in-left me-1"></i>반납
+                                        </button>
+                                    </form>
+                                    <span th:if="${loan.status == 'REQUESTED'}" class="text-muted">대기 중</span>
+                                    <span th:if="${loan.status == 'RETURN_REQUESTED'}" class="text-muted">확인 중</span>
+                                    <span th:if="${loan.status == 'RETURNED'}" class="text-muted">완료</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(loans)}">
+                                <td colspan="8" class="text-center text-muted py-4">대출 기록이 없습니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

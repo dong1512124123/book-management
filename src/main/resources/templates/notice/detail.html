@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/header :: styles}">
+    <title>공지사항 상세</title>
+</head>
+<body>
+    <nav th:replace="~{fragments/header :: navbar}"></nav>
+    <div th:replace="~{fragments/header :: sidebar}"></div>
+
+    <div class="main-content">
+    <div class="container-fluid" style="max-width: 700px;">
+        <div class="page-header">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li th:if="${from == 'admin'}" class="breadcrumb-item"><a href="/dashboard">홈</a></li>
+                    <li th:if="${from == 'user'}" class="breadcrumb-item"><a href="/user/dashboard">홈</a></li>
+                    <li th:if="${from == 'admin'}" class="breadcrumb-item"><a href="/admin/notices">공지사항</a></li>
+                    <li th:if="${from == 'user'}" class="breadcrumb-item"><a href="/user/notices">공지사항</a></li>
+                    <li class="breadcrumb-item active">상세</li>
+                </ol>
+            </nav>
+            <h2>공지사항</h2>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-1" th:text="${notice.title}"></h5>
+                <div class="text-muted" style="font-size:0.85rem;">
+                    <i class="bi bi-person me-1"></i><span th:text="${notice.author}"></span>
+                    <span class="mx-2">|</span>
+                    <i class="bi bi-clock me-1"></i><span th:text="${#temporals.format(notice.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+                    <span th:if="${notice.updatedAt != null}">
+                        <span class="mx-2">|</span>
+                        <i class="bi bi-pencil me-1"></i>수정: <span th:text="${#temporals.format(notice.updatedAt, 'yyyy-MM-dd HH:mm')}"></span>
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="white-space: pre-wrap; line-height: 1.8;" th:text="${notice.content}"></div>
+            </div>
+            <div class="card-footer bg-white d-flex gap-2">
+                <!-- 관리자: 수정/삭제 버튼 -->
+                <a th:if="${from == 'admin'}" th:href="@{/admin/notices/{id}/edit(id=${notice.id})}"
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-pencil me-1"></i>수정
+                </a>
+                <form th:if="${from == 'admin'}" th:action="@{/admin/notices/{id}/delete(id=${notice.id})}"
+                      method="post" style="display:inline"
+                      onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-trash me-1"></i>삭제
+                    </button>
+                </form>
+                <!-- 돌아가기 -->
+                <a th:href="${from == 'admin'} ? '/admin/notices' : '/user/notices'"
+                   class="btn btn-outline-secondary btn-sm ms-auto">
+                    ← 목록으로
+                </a>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
